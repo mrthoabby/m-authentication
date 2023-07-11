@@ -18,12 +18,8 @@ func NewSettingsController(services services.ISettingsService) *SettingsControll
 }
 
 func (controller *SettingsController) InitialiceService(context *gin.Context) {
-	if scripts.IsSettingsSetteds() {
-		context.IndentedJSON(404, gin.H{
-			"message": "Not found",
-		})
-	} else {
+	if !scripts.IsSettingsSetteds() {
 		context.File("./static/index.html")
 	}
-
+	context.AbortWithStatus(404)
 }
