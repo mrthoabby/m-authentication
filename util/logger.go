@@ -1,4 +1,4 @@
-package logHandler
+package util
 
 import (
 	"fmt"
@@ -61,7 +61,7 @@ func customizeLogAttributes(groups []string, a slog.Attr) slog.Attr {
 // GetInstance returns a pointer to a log.Logger instance that writes to both the log file and os.Stdout.
 // The log file is located at "logs/logs.log" and has read, write, and append permissions.
 // The logger prefix is "WebSocket: " and it includes the date, time, and short file name in the log message.
-func GetInstance() *slog.Logger {
+func LoggerHandler() *slog.Logger {
 	if logger == nil {
 		logFile, cantCreateInfoLogFile := os.OpenFile("logs/logs.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, os.ModePerm)
 		if cantCreateInfoLogFile != nil {
