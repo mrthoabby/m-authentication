@@ -1,14 +1,20 @@
-package basicAuth
+package basic
 
 import (
-	"com.github/mrthoabby/m-authentication/global"
-	"com.github/mrthoabby/m-authentication/utils"
+	"reflect"
+
+	"com.github/mrthoabby/m-authentication/globalConfig"
+	"com.github/mrthoabby/m-authentication/util"
 	"github.com/go-playground/validator/v10"
 )
 
 type Config struct {
-	Connection []Connection `xml:"connection" validate:"required,allConnectionsCanBeAnUniqueId"`
-	Auth       Auth         `xml:"auth" validate:"required"`
+	Connection []connection `xml:"connection" validate:"required,allConnectionsCanBeAnUniqueId"`
+	Auth       auth         `xml:"auth" validate:"required"`
+}
+
+func (c *Config) GetType() reflect.Type {
+	return reflect.TypeOf(*c)
 }
 
 func allConnectionsCanBeAnUniqueId(fl validator.FieldLevel) bool {
@@ -23,7 +29,7 @@ func allConnectionsCanBeAnUniqueId(fl validator.FieldLevel) bool {
 	return true
 }
 
-type Connection struct {
+type connection struct {
 	Id       string `xml:"id,attr" validate:"required"`
 	Type     string `xml:"type,attr" validate:"required,validTypeConnection"`
 	Host     string `xml:"host,attr" validate:"required"`
@@ -34,7 +40,7 @@ type Connection struct {
 }
 
 func isAnValidTypeConnection(fl validator.FieldLevel) bool {
-	validTypes := []string{"sql"}
+	validTypes := globalConfig.CurrentConnectionDatabaseType
 	for _, validType := range validTypes {
 		if fl.Field().String() == validType {
 			return true
@@ -43,45 +49,45 @@ func isAnValidTypeConnection(fl validator.FieldLevel) bool {
 	return false
 }
 
-type Auth struct {
+type auth struct {
 	UseRoles bool  `xml:"useRoles,attr"`
-	Table    Table `xml:"table" validate:"required"`
-	Roles    Roles `xml:"roles" validate:"rolesRequiredAuth"`
+	Table    table `xml:"table" validate:"required"`
+	Roles    roles `xml:"roles" validate:"rolesRequiredAuth"`
 }
 
 func isRolesRequiredAuth(fl validator.FieldLevel) bool {
-	auth := fl.Parent().Interface().(Auth)
+	auth := fl.Parent().Interface().(auth)
 	return auth.UseRoles
 }
 
-type Table struct {
+type table struct {
 	Name     string   `xml:"name,attr" validate:"required"`
-	User     User     `xml:"user" validate:"required,userColumnIsDiferentPasswordTable"`
-	Password Password `xml:"password" validate:"required"`
+	User     user     `xml:"user" validate:"required,userColumnIsDiferentPasswordTable"`
+	Password password `xml:"password" validate:"required"`
 }
 
 func userColumnIsDiferentPasswordTable(fl validator.FieldLevel) bool {
-	table := fl.Parent().Interface().(Table)
+	table := fl.Parent().Interface().(table)
 	return table.User.Colum != table.Password.Colum
 }
 
-type User struct {
+type user struct {
 	Colum string `xml:"colum,attr" validate:"required"`
 }
 
-type Password struct {
+type password struct {
 	Colum   string  `xml:"colum,attr" validate:"required"`
-	Encrypt Encrypt `xml:"encrypt" validate:"required"`
+	Encrypt encrypt `xml:"encrypt" validate:"required"`
 }
 
-type Encrypt struct {
+type encrypt struct {
 	Algorithm string `xml:"algorithm,attr" validate:"required,validAlgorithm"`
 	Source    string `xml:"source,attr" validate:"required,validSource"`
 	Key       string `xml:"key,attr" validate:"required,KeyRequired"`
 }
 
 func isAnValidAlgorithm(fl validator.FieldLevel) bool {
-	validAlgorithms := global.CurrentAlgorithms
+	validAlgorithms := globalConfig.CurrentAlgorithms
 	for _, validAlgorithm := range validAlgorithms {
 		if fl.Field().String() == validAlgorithm {
 			return true
@@ -91,7 +97,7 @@ func isAnValidAlgorithm(fl validator.FieldLevel) bool {
 }
 
 func isAnValidSource(fl validator.FieldLevel) bool {
-	validSources := global.CurrentSources
+	validSources := globalConfig.CurrentSources
 	for _, validSource := range validSources {
 		if fl.Field().String() == validSource {
 			return true
@@ -101,37 +107,37 @@ func isAnValidSource(fl validator.FieldLevel) bool {
 }
 
 func isAnRequiredKey(fl validator.FieldLevel) bool {
-	encrypt := fl.Parent().Interface().(Encrypt)
-	return encrypt.Source == global.SOURCE_ENCRYPTION_LOCAL
+	encrypt := fl.Parent().Interface().(encrypt)
+	return encrypt.Source == globalConfig.SOURCE_ENCRYPTION_LOCAL
 }
 
-type Roles struct {
-	Global Global `xml:"global"`
-	Role   []Role `xml:"role" validate:"required"`
+type roles struct {
+	Global global `xml:"global"`
+	Role   []role `xml:"role" validate:"required"`
 }
 
-type Role struct {
+type role struct {
 	Name   string `xml:"name,attr" validate:"required"`
-	Claims Claims `xml:"claims" validate:"required"`
+	Claims claims `xml:"claims" validate:"required"`
 }
 
-type Global struct {
-	Claims Claims `xml:"claims" validate:"required"`
+type global struct {
+	Claims claims `xml:"claims" validate:"required"`
 }
 
-type Claims struct {
-	DataSource []DataSource `xml:"DataSource" validate:"required"`
+type claims struct {
+	DataSource []dataSource `xml:"DataSource" validate:"required"`
 }
 
-type DataSource struct {
+type dataSource struct {
 	Type         string     `xml:"type,attr" validate:"required,validTypeDataSource"`
 	ConnectionId string     `xml:"connectionId,attr" validate:"IdConnectionRequired"`
-	AsideTable   AsideTable `xml:"aside_table" validate:"AsideTableRequired"`
-	Claim        []Claim    `xml:"claim" validate:"ClaimRequired"`
+	AsideTable   asideTable `xml:"aside_table" validate:"AsideTableRequired"`
+	Claim        []claim    `xml:"claim" validate:"ClaimRequired"`
 }
 
 func isAnValidTypeDataSource(fl validator.FieldLevel) bool {
-	validTypes := global.CurrentDataSourcesType
+	validTypes := globalConfig.CurrentDataSourcesType
 	for _, validType := range validTypes {
 		if fl.Field().String() == validType {
 			return true
@@ -141,39 +147,39 @@ func isAnValidTypeDataSource(fl validator.FieldLevel) bool {
 }
 
 func isIdConnectionRequiredIfTypeIsConnectionDataSource(fl validator.FieldLevel) bool {
-	dataSource := fl.Parent().Interface().(DataSource)
-	return dataSource.Type == global.DATASOURCE_TYPE_CONNECTION
+	dataSource := fl.Parent().Interface().(dataSource)
+	return dataSource.Type == globalConfig.DATASOURCE_TYPE_CONNECTION
 }
 
 func isAsideTableRequiredIfTypeIsConnectionDataSource(fl validator.FieldLevel) bool {
-	dataSource := fl.Parent().Interface().(DataSource)
-	return dataSource.Type == global.DATASOURCE_TYPE_CONNECTION
+	dataSource := fl.Parent().Interface().(dataSource)
+	return dataSource.Type == globalConfig.DATASOURCE_TYPE_CONNECTION
 }
 
 func isClaimRequiredIfTypeIsNotConnectionDataSource(fl validator.FieldLevel) bool {
-	dataSource := fl.Parent().Interface().(DataSource)
-	return dataSource.Type != global.DATASOURCE_TYPE_CONNECTION
+	dataSource := fl.Parent().Interface().(dataSource)
+	return dataSource.Type != globalConfig.DATASOURCE_TYPE_CONNECTION
 }
 
-type AsideTable struct {
+type asideTable struct {
 	Name          string  `xml:"name,attr" validate:"required"`
 	Column        string  `xml:"column,attr" validate:"required,isColumnDifferentSessionColumn"`
 	SessionColumn string  `xml:"sessionColumn,attr" validate:"required"`
-	Claim         []Claim `xml:"claim" validate:"required"`
+	Claim         []claim `xml:"claim" validate:"required"`
 }
 
 func isColumnDifferentSessionColumnAsideTable(fl validator.FieldLevel) bool {
-	asideTable := fl.Parent().Interface().(AsideTable)
+	asideTable := fl.Parent().Interface().(asideTable)
 	return asideTable.Column != asideTable.SessionColumn
 }
 
-type Claim struct {
+type claim struct {
 	Name   string `xml:"name,attr" validate:"required"`
 	Format string `xml:"format,attr" validate:"required,validFormatClaim"`
 }
 
 func isAnValidFormatClaim(fl validator.FieldLevel) bool {
-	validFormats := global.CurrentClaimValidFormats
+	validFormats := globalConfig.CurrentClaimValidFormats
 	for _, validFormat := range validFormats {
 		if fl.Field().String() == validFormat {
 			return true
@@ -183,8 +189,8 @@ func isAnValidFormatClaim(fl validator.FieldLevel) bool {
 }
 
 func init() {
-	validator := utils.GetValidator()
-	global.Once.Do(func() {
+	validator := util.GetValidator()
+	globalConfig.OneTime.Do(func() {
 		validator.RegisterValidation("IdConnectionRequired", isIdConnectionRequiredIfTypeIsConnectionDataSource)
 		validator.RegisterValidation("isColumnDifferentSessionColumn", isColumnDifferentSessionColumnAsideTable)
 		validator.RegisterValidation("AsideTableRequired", isAsideTableRequiredIfTypeIsConnectionDataSource)
