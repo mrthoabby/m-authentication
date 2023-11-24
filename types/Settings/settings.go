@@ -1,27 +1,27 @@
 package settings
 
 import (
-	"com.github/mrthoabby/m-authentication/global"
-	"com.github/mrthoabby/m-authentication/utils"
+	globalConfig "com.github/mrthoabby/m-authentication/globalConfig"
+	"com.github/mrthoabby/m-authentication/util"
 	"github.com/go-playground/validator/v10"
 )
 
 type Config struct {
-	Service Service `xml:"service" validate:"required"`
-	Server  Server  `xml:"server" validate:"required"`
+	Service service `xml:"service" validate:"required"`
+	Server  server  `xml:"server" validate:"required"`
 }
 
-type Service struct {
-	AuthMethod AuthMethod `xml:"authMethod" validate:"required"`
+type service struct {
+	AuthMethod authMethod `xml:"authMethod" validate:"required"`
 }
 
-type AuthMethod struct {
+type authMethod struct {
 	Output string `xml:"output,attr" validate:"validOutputAuthMethod"`
 	Type   string `xml:"type,attr" validate:"validTypeAuthMethod"`
 }
 
 func isAnValidOutputAuthMethod(fl validator.FieldLevel) bool {
-	validOutputs := global.CurrentOutputTypes
+	validOutputs := globalConfig.CurrentOutputTypes
 	for _, validOutput := range validOutputs {
 		if fl.Field().String() == validOutput {
 			return true
@@ -31,7 +31,7 @@ func isAnValidOutputAuthMethod(fl validator.FieldLevel) bool {
 }
 
 func isAnValidTypeAuthMethod(fl validator.FieldLevel) bool {
-	validTypes := global.CurrentAuthMethods
+	validTypes := globalConfig.CurrentAuthMethods
 	for _, validType := range validTypes {
 		if fl.Field().String() == validType {
 			return true
@@ -40,13 +40,13 @@ func isAnValidTypeAuthMethod(fl validator.FieldLevel) bool {
 	return false
 }
 
-type Server struct {
+type server struct {
 	Port int `xml:"port"`
 }
 
 func init() {
-	validator := utils.GetValidator()
-	global.Once.Do(func() {
+	validator := util.GetValidator()
+	globalConfig.OneTime.Do(func() {
 		validator.RegisterValidation("validOutputAuthMethod", isAnValidOutputAuthMethod)
 		validator.RegisterValidation("validTypeAuthMethod", isAnValidTypeAuthMethod)
 	})
