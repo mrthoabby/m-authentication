@@ -12,7 +12,7 @@ import (
 // Then, it opens the file using os.Open function.
 // If an error occurs while opening the file, it logs the error and returns it.
 // Finally, it defers the closing of the file and returns the opened file and nil error if successful.
-func readFile(filePath string) (*os.File, error) {
+func readFile(filePath string, closeManually bool) (*os.File, error) {
 	fileConfigAbsolutePath, err := filepath.Abs(filePath)
 	if err != nil {
 		LoggerHandler().Error("Error getting absolute path", "error", err.Error())
@@ -22,9 +22,12 @@ func readFile(filePath string) (*os.File, error) {
 	file, err := os.Open(fileConfigAbsolutePath)
 	if err != nil {
 		LoggerHandler().Error("Error opening file", "error", err.Error())
+		defer file.Close()
 		return nil, err
 	}
-	defer file.Close()
+	if !closeManually {
+		defer file.Close()
+	}
 
 	return file, nil
 }
@@ -34,7 +37,7 @@ func readFile(filePath string) (*os.File, error) {
 // The desfine parameter is a pointer to the destination object where the decoded XML data will be stored.
 // It returns an error if there was an issue reading the file or decoding the XML data.
 func ReadXmlFile[T any](filePath string, desfine *T) error {
-	file, error := readFile(filePath)
+	file, error := readFile(filePath, true)
 	if error != nil {
 		return error
 	}
@@ -42,5 +45,6 @@ func ReadXmlFile[T any](filePath string, desfine *T) error {
 		LoggerHandler().Error("Error decoding xml file", "error", errorDecoding.Error())
 		return errorDecoding
 	}
+	defer file.Close()
 	return nil
 }
