@@ -1,9 +1,5 @@
 package globalConfig
 
-import (
-	"sync"
-)
-
 const (
 	AUTH_METHOD_BASIC = "basic"
 
@@ -37,11 +33,10 @@ const (
 	ALGORITHM_ENCRYPTION_TYPE_SHA384 = "SHA384"
 	ALGORITHM_ENCRYPTION_TYPE_SHA512 = "SHA512"
 
-	CONFIG_SERVICE_PATH = "config/services.xml"
+	CONFIG_SERVICE_PATH = "config/settings.xml"
 )
 
 var (
-	OneTime            sync.Once
 	CurrentAuthMethods = []string{AUTH_METHOD_BASIC}
 	CurrentOutputTypes = []string{OUTPUTH_TYPE_TOKEN}
 	CurrentAlgorithms  = []string{

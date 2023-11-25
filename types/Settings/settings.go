@@ -45,9 +45,6 @@ type server struct {
 }
 
 func init() {
-	validator := util.GetValidator()
-	globalConfig.OneTime.Do(func() {
-		validator.RegisterValidation("validOutputAuthMethod", isAnValidOutputAuthMethod)
-		validator.RegisterValidation("validTypeAuthMethod", isAnValidTypeAuthMethod)
-	})
+	util.GetValidator().RegisterValidation("validOutputAuthMethod", isAnValidOutputAuthMethod)
+	util.GetValidator().RegisterValidation("validTypeAuthMethod", isAnValidTypeAuthMethod)
 }

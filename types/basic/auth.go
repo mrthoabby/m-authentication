@@ -50,9 +50,10 @@ func isAnValidTypeConnection(fl validator.FieldLevel) bool {
 }
 
 type auth struct {
-	UseRoles bool  `xml:"useRoles,attr"`
-	Table    table `xml:"table" validate:"required"`
-	Roles    roles `xml:"roles" validate:"rolesRequiredAuth"`
+	UseRoles   bool   `xml:"useRoles,attr"`
+	RouterName string `xml:"routerName,attr" validate:"required"`
+	Table      table  `xml:"table" validate:"required"`
+	Roles      roles  `xml:"roles" validate:"rolesRequiredAuth"`
 }
 
 func isRolesRequiredAuth(fl validator.FieldLevel) bool {
@@ -68,15 +69,15 @@ type table struct {
 
 func userColumnIsDiferentPasswordTable(fl validator.FieldLevel) bool {
 	table := fl.Parent().Interface().(table)
-	return table.User.Colum != table.Password.Colum
+	return table.User.Column != table.Password.Column
 }
 
 type user struct {
-	Colum string `xml:"colum,attr" validate:"required"`
+	Column string `xml:"column,attr" validate:"required"`
 }
 
 type password struct {
-	Colum   string  `xml:"colum,attr" validate:"required"`
+	Column  string  `xml:"column,attr" validate:"required"`
 	Encrypt encrypt `xml:"encrypt" validate:"required"`
 }
 
@@ -108,7 +109,10 @@ func isAnValidSource(fl validator.FieldLevel) bool {
 
 func isAnRequiredKey(fl validator.FieldLevel) bool {
 	encrypt := fl.Parent().Interface().(encrypt)
-	return encrypt.Source == globalConfig.SOURCE_ENCRYPTION_LOCAL
+	if encrypt.Source == globalConfig.SOURCE_ENCRYPTION_LOCAL {
+		return encrypt.Key != ""
+	}
+	return true
 }
 
 type roles struct {
@@ -189,20 +193,17 @@ func isAnValidFormatClaim(fl validator.FieldLevel) bool {
 }
 
 func init() {
-	validator := util.GetValidator()
-	globalConfig.OneTime.Do(func() {
-		validator.RegisterValidation("IdConnectionRequired", isIdConnectionRequiredIfTypeIsConnectionDataSource)
-		validator.RegisterValidation("isColumnDifferentSessionColumn", isColumnDifferentSessionColumnAsideTable)
-		validator.RegisterValidation("AsideTableRequired", isAsideTableRequiredIfTypeIsConnectionDataSource)
-		validator.RegisterValidation("userColumnIsDiferentPasswordTable", userColumnIsDiferentPasswordTable)
-		validator.RegisterValidation("ClaimRequired", isClaimRequiredIfTypeIsNotConnectionDataSource)
-		validator.RegisterValidation("allConnectionsCanBeAnUniqueId", allConnectionsCanBeAnUniqueId)
-		validator.RegisterValidation("validTypeDataSource", isAnValidTypeDataSource)
-		validator.RegisterValidation("validTypeConnection", isAnValidTypeConnection)
-		validator.RegisterValidation("validFormatClaim", isAnValidFormatClaim)
-		validator.RegisterValidation("rolesRequiredAuth", isRolesRequiredAuth)
-		validator.RegisterValidation("validAlgorithm", isAnValidAlgorithm)
-		validator.RegisterValidation("validSource", isAnValidSource)
-		validator.RegisterValidation("KeyRequired", isAnRequiredKey)
-	})
+	util.GetValidator().RegisterValidation("IdConnectionRequired", isIdConnectionRequiredIfTypeIsConnectionDataSource)
+	util.GetValidator().RegisterValidation("isColumnDifferentSessionColumn", isColumnDifferentSessionColumnAsideTable)
+	util.GetValidator().RegisterValidation("AsideTableRequired", isAsideTableRequiredIfTypeIsConnectionDataSource)
+	util.GetValidator().RegisterValidation("userColumnIsDiferentPasswordTable", userColumnIsDiferentPasswordTable)
+	util.GetValidator().RegisterValidation("ClaimRequired", isClaimRequiredIfTypeIsNotConnectionDataSource)
+	util.GetValidator().RegisterValidation("allConnectionsCanBeAnUniqueId", allConnectionsCanBeAnUniqueId)
+	util.GetValidator().RegisterValidation("validTypeDataSource", isAnValidTypeDataSource)
+	util.GetValidator().RegisterValidation("validTypeConnection", isAnValidTypeConnection)
+	util.GetValidator().RegisterValidation("validFormatClaim", isAnValidFormatClaim)
+	util.GetValidator().RegisterValidation("rolesRequiredAuth", isRolesRequiredAuth)
+	util.GetValidator().RegisterValidation("validAlgorithm", isAnValidAlgorithm)
+	util.GetValidator().RegisterValidation("validSource", isAnValidSource)
+	util.GetValidator().RegisterValidation("KeyRequired", isAnRequiredKey)
 }
