@@ -31,12 +31,16 @@ func NewConfigBuilder() *configBuilder {
 	}
 }
 
-func (b *configBuilder) BuildAuthConfig() interfaces.AuthMethod {
+func (b *configBuilder) BuildAuthConfig() (error, interfaces.AuthMethod) {
 	switch b.service.Service.AuthMethod.Type {
 	case globalConfig.AUTH_METHOD_BASIC:
-		return b.buildBasicAuth()
+		errorGettingBasicAuth, basicAuthConfig := b.buildBasicAuth()
+		if errorGettingBasicAuth != nil {
+			return errorGettingBasicAuth, nil
+		}
+		return nil, basicAuthConfig
 	default:
-		return nil
+		return NewCustomError("Invalid auth method"), nil
 	}
 }
 
@@ -44,20 +48,25 @@ func (b *configBuilder) GetConfigs() *settings.Config {
 	return b.service
 }
 
-func (b *configBuilder) buildBasicAuth() *basic.Config {
+func (b *configBuilder) buildBasicAuth() (error, *basic.Config) {
 	var basicAuthConfig basic.Config
-	filepath := globalConfig.AUTH_METHOD_BASIC + globalConfig.AUTH_METHOD_BASIC + ".xml"
+	var filepath string
+	if globalConfig.AUTH_METHODS_PATH[len(globalConfig.AUTH_METHODS_PATH)-1:] != "/" {
+		filepath = globalConfig.AUTH_METHODS_PATH + "/" + globalConfig.AUTH_METHOD_BASIC + ".xml"
+	} else {
+		filepath = globalConfig.AUTH_METHODS_PATH + globalConfig.AUTH_METHOD_BASIC + ".xml"
+	}
 
 	errorGettingXml := util.ReadXmlFile[basic.Config](filepath, &basicAuthConfig)
 	if errorGettingXml != nil {
 		util.LoggerHandler().Error("Error getting xml file", "error", errorGettingXml.Error())
-		return nil
+		return errorGettingXml, nil
 	}
 	errorValidatingBasicAuthConfig := util.GetValidator().Struct(basicAuthConfig)
 	if errorValidatingBasicAuthConfig != nil {
 		util.LoggerHandler().Error("Error validating basic auth config", "error", errorValidatingBasicAuthConfig.Error())
-		return nil
+		return errorGettingXml, nil
 	}
 
-	return &basicAuthConfig
+	return nil, &basicAuthConfig
 }
