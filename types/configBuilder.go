@@ -31,7 +31,7 @@ func NewConfigBuilder() *configBuilder {
 	}
 }
 
-func (b *configBuilder) BuildAuthConfig() (error, interfaces.AuthMethod) {
+func (b *configBuilder) BuildAuthConfig() (error, interfaces.IAuthMethod) {
 	switch b.service.Service.AuthMethod.Type {
 	case globalConfig.AUTH_METHOD_BASIC:
 		errorGettingBasicAuth, basicAuthConfig := b.buildBasicAuth()

@@ -1,4 +1,4 @@
-package basicAuth
+package types
 
 type Credentials struct {
 	User     string `form:"user" json:"user" xml:"user"  binding:"required"`

@@ -1,8 +1,6 @@
-package types
+package util
 
 import (
-	"com.github/mrthoabby/m-authentication/interfaces"
-	"com.github/mrthoabby/m-authentication/util"
 	"github.com/gin-gonic/gin"
 )
 
@@ -25,16 +23,20 @@ func (b *FORMBinder[T]) Bind(context *gin.Context, data *T) error {
 }
 
 type BinderStrategy[T any] struct {
-	Strategy interfaces.BindFormatStrategy[T]
+	Strategy iBindFormatStrategy[T]
 }
 
-func (b *BinderStrategy[T]) SetStrategy(strategy interfaces.BindFormatStrategy[T]) {
+func (b *BinderStrategy[T]) SetStrategy(strategy iBindFormatStrategy[T]) {
 	b.Strategy = strategy
 }
 
 func (b *BinderStrategy[T]) Bind(context *gin.Context, data *T) error {
 	if b.Strategy == nil {
-		util.LoggerHandler().Error("Error binding data", "error", "Strategy not set")
+		LoggerHandler().Error("Error binding data", "error", "Strategy not set")
 	}
 	return b.Strategy.Bind(context, data)
+}
+
+type iBindFormatStrategy[T any] interface {
+	Bind(context *gin.Context, data *T) error
 }
