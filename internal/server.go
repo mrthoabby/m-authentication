@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"com.github/mrthoabby/m-authentication/globalConfig"
+	"com.github/mrthoabby/m-authentication/internal/databases"
 	"com.github/mrthoabby/m-authentication/internal/middlewares"
 	"com.github/mrthoabby/m-authentication/internal/modules/basicAuth"
 	"com.github/mrthoabby/m-authentication/types"
@@ -37,12 +38,25 @@ func ServerInit() {
 	auth, isOk := authConfig.(*basic.Config)
 	switch currentType := authConfig.GetType(); {
 	case reflect.TypeOf(basic.Config{}) == currentType && isOk && configSettings.Service.AuthMethod.Type == globalConfig.AUTH_METHOD_BASIC:
-
+		var pooler *databases.DatabasePooler
 		var routerName string
 		if routerName = auth.Auth.RouterName; routerName[0:1] != "/" {
 			routerName = "/" + routerName
 		}
-		basicAuth.AuthController(_router.Group(routerName))
+
+		if auth.Connection[0].Type == globalConfig.CONNECTION_DATABASE_TYPE_SQL {
+			hostDatabase := auth.Connection[0].Host
+			if auth.Connection[0].Port != 0 {
+				hostDatabase += ":" + strconv.Itoa(auth.Connection[0].Port)
+			}
+			userDatabase := auth.Connection[0].User
+			passwordDatabase := auth.Connection[0].Password
+			databaseName := auth.Connection[0].Database
+			connectionString := "server=" + hostDatabase + ";user id=" + userDatabase + ";password=" + passwordDatabase + ";database=" + databaseName + ";"
+			databaseFactory := databases.NewConcreteDatabaseFactory(auth.Connection[0].Type, connectionString)
+			pooler = databases.NewDatabasePooler(databaseFactory)
+		}
+		basicAuth.NewAuthController(pooler.GetConnection(), _router.Group(routerName)).Register()
 	default:
 		util.LoggerHandler().Error("Error validating basic auth config", "error", "Invalid auth method")
 	}
