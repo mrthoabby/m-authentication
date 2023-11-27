@@ -4,6 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type BindFormatStrategy[T any] interface {
+type IBindFormatStrategy[T any] interface {
 	Bind(context *gin.Context, data *T) error
 }
