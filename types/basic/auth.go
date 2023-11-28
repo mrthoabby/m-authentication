@@ -9,7 +9,7 @@ import (
 )
 
 type Config struct {
-	Connection []connection `xml:"connection" validate:"required,allConnectionsCanBeAnUniqueId"`
+	Connection []Connection `xml:"connection" validate:"required,allConnectionsCanBeAnUniqueId"`
 	Auth       auth         `xml:"auth" validate:"required"`
 }
 
@@ -29,7 +29,7 @@ func allConnectionsCanBeAnUniqueId(fl validator.FieldLevel) bool {
 	return true
 }
 
-type connection struct {
+type Connection struct {
 	Id       string `xml:"id,attr" validate:"required"`
 	Type     string `xml:"type,attr" validate:"required,validTypeConnection"`
 	Host     string `xml:"host,attr" validate:"required"`
@@ -78,13 +78,13 @@ type user struct {
 
 type password struct {
 	Column  string  `xml:"column,attr" validate:"required"`
-	Encrypt encrypt `xml:"encrypt" validate:"required"`
+	Encrypt Encrypt `xml:"encrypt" validate:"required"`
 }
 
-type encrypt struct {
+type Encrypt struct {
 	Algorithm string `xml:"algorithm,attr" validate:"required,validAlgorithm"`
-	Source    string `xml:"source,attr" validate:"required,validSource"`
-	Key       string `xml:"key,attr" validate:"required,KeyRequired"`
+	Source    string `xml:"source,attr" validate:"omitempty,validSource"`
+	Key       string `xml:"key,attr" validate:"omitempty,KeyRequired"`
 }
 
 func isAnValidAlgorithm(fl validator.FieldLevel) bool {
@@ -108,7 +108,7 @@ func isAnValidSource(fl validator.FieldLevel) bool {
 }
 
 func isAnRequiredKey(fl validator.FieldLevel) bool {
-	encrypt := fl.Parent().Interface().(encrypt)
+	encrypt := fl.Parent().Interface().(Encrypt)
 	if encrypt.Source == globalConfig.SOURCE_ENCRYPTION_LOCAL {
 		return encrypt.Key != ""
 	}
