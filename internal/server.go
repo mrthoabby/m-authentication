@@ -35,28 +35,31 @@ func ServerInit() {
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	auth, isOk := authConfig.(*basic.Config)
 	switch currentType := authConfig.GetType(); {
-	case reflect.TypeOf(basic.Config{}) == currentType && isOk && configSettings.Service.AuthMethod.Type == globalConfig.AUTH_METHOD_BASIC:
-		var pooler *databases.DatabasePooler
+	case configSettings.Service.AuthMethod.Type == globalConfig.AUTH_METHOD_BASIC && reflect.TypeOf(basic.Config{}) == currentType:
+		authenticationSettings, isOk := authConfig.(*basic.Config)
+		if !isOk {
+			util.LoggerHandler().Error("Error validating basic auth config", "error", "Invalid auth method")
+			return
+		}
 		var routerName string
-		if routerName = auth.Auth.RouterName; routerName[0:1] != "/" {
+		if routerName = authenticationSettings.Auth.RouterName; routerName[0:1] != "/" {
 			routerName = "/" + routerName
 		}
-
-		if auth.Connection[0].Type == globalConfig.CONNECTION_DATABASE_TYPE_SQL {
-			hostDatabase := auth.Connection[0].Host
-			if auth.Connection[0].Port != 0 {
-				hostDatabase += ":" + strconv.Itoa(auth.Connection[0].Port)
-			}
-			userDatabase := auth.Connection[0].User
-			passwordDatabase := auth.Connection[0].Password
-			databaseName := auth.Connection[0].Database
-			connectionString := "server=" + hostDatabase + ";user id=" + userDatabase + ";password=" + passwordDatabase + ";database=" + databaseName + ";"
-			databaseFactory := databases.NewConcreteDatabaseFactory(auth.Connection[0].Type, connectionString)
-			pooler = databases.NewDatabasePooler(databaseFactory)
+		databaseFactory := databases.NewConcreteDatabaseFactory(authenticationSettings.Connection[0])
+		pooler := databases.NewDatabasePooler(databaseFactory, &types.TableMapper{
+			AuthTable:        authenticationSettings.Auth.Table.Name,
+			UserColumn:       authenticationSettings.Auth.Table.User.Column,
+			PasswordColumn:   authenticationSettings.Auth.Table.Password.Column,
+			DataSourceTables: make([]string, 0),         //Empty for test
+			DataSourcColumns: make(map[string][]string), //Empty for test
+		})
+		if pooler.GetConnectionsOpened() < globalConfig.POOL_SIZE_DATABASE_CONNECTION*0.8 {
+			util.LoggerHandler().Error("Error creating database connection", "error", "Not enough connections")
+			return
 		}
-		basicAuth.NewAuthController(pooler.GetConnection(), _router.Group(routerName)).Register()
+		basicAuth.NewAuthController(pooler.GetConnection(), _router.Group(routerName), *authenticationSettings).Register()
+
 	default:
 		util.LoggerHandler().Error("Error validating basic auth config", "error", "Invalid auth method")
 	}

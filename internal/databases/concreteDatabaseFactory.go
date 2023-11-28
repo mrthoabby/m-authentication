@@ -5,24 +5,25 @@ import (
 
 	"com.github/mrthoabby/m-authentication/globalConfig"
 	"com.github/mrthoabby/m-authentication/types"
+	"com.github/mrthoabby/m-authentication/types/basic"
 )
 
 type iDatabaseConnectionFactory interface {
-	CreateConnection() (IDatabaseConnectionRepository, error)
+	CreateConnection(tableMapper *types.TableMapper) (IDatabaseConnectionRepository, error)
 }
 
 type IDatabaseConnectionRepository interface {
-	Query(query string) (*sql.Rows, error)
-	ValidAuthentication(credentials types.Credentials) bool
+	Query(query string, args ...any) (*sql.Rows, error)
+	GetPasswordHash(credentials types.Credentials) (string, error)
 }
 
 type ConcreteDatabaseFactorystruct struct {
 }
 
-func NewConcreteDatabaseFactory(databaseType, connectionString string) iDatabaseConnectionFactory {
-	switch databaseType {
+func NewConcreteDatabaseFactory(connectionData basic.Connection) iDatabaseConnectionFactory {
+	switch connectionData.Type {
 	case globalConfig.CONNECTION_DATABASE_TYPE_SQL:
-		return NewMycrosoftSQLFactory(connectionString)
+		return NewMycrosoftSQLFactory(connectionData)
 	default:
 		return nil
 	}
